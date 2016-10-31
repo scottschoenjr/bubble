@@ -1,43 +1,61 @@
-function dy = RPEqn(t, y, f_exc,R0,pAmp)
+%**************************************************************************
+%
+% Rayleigh-Plesset Equation
+%
+%   Function returns the Rayleigh-Plesset equation (to be solved with an
+%   ODE solver), for a shelled bubble containing an ideal gas. Includes
+%   effects of surface tension and shell behavior, but not yet the buckling
+%   described in the paper.
+%
+%   The expression is given by Eq. (3) of "A model for large amplitude 
+%   oscillations of coated bubbles accounting for buckling and rupture",
+%   Marmottant et al., JASA 118(6) 2005.
+%
+% Inputs
+%   t - Time vector [s]
+%   y - 
+%   f_excit - Excitation frequency (sinusoidal) [Hz]
+%   R0 - Equilibrium bubble radius [m]
+%   pAmp - Excitation amplitude [Pa]
+%
+% Returns
+%   dy - Vector of ODEs for solver
+%     dy(1) = Rdot
+%     dy(2) = Rddot
+%
+%**************************************************************************
 
-global medium simul bubble
+function dy = RPEqn(t, y, medium, bubble, sim, excitation)
+
+% Interpolate the excitation signal to the evaluation times
+pA = interp1( excitation.tVector, excitation.signal, t );
 
 R = y(1);
 dR = y(2);
 
-switch medium.mode
-    case 'heaviside'
-        t0 = 500e-6;
-        if t<t0
-            p0 = medium.p0;
-        elseif t>=t0
-            
-            p0 = medium.p0 + medium.pC;
-        end
-        
-    case 'static'
-        p0 = medium.p0;
-        
-end
+% Get medium properties
+k = medium.k; % Adiabatic constant
+sigma = medium.sigma; % Surface tension
+rho = medium.rho; % Density
+c0 = medium.c0; % Sound speed
+mu = medium.mu; % Viscosity
+p0 = medium.p0;
 
-k = medium.k;
-sigma = medium.sigma;
-rho = medium.rho;
-c0 = medium.c0;
-mu_ = medium.mu;
+% Get bubble properties
 Pv = bubble.Pvap;
+R0 = bubble.R0;
 
+% Shorthand
 P_Ge = 2*sigma/R0 + p0 - Pv;
-pA_ = simul.excite.polarity*pAmp*sin(2*pi*f_exc*t);
-if strcmp(simul.excite.type,'Pulsed')
-    if t<= 1/f_exc*simul.excite.numcycles
-        pA_ = simul.excite.polarity*pAmp*sin(2*pi*f_exc*t);
-    else
-        pA_ = 0;
-    end
-end
 
-ddR = ((P_Ge*(R0/R)^(3*k)*(1) - 2*sigma/R - 4*mu_*dR/R - p0 - pA_ + Pv)/rho - 3/2*dR^2)/R;
-% ddR = ((P_Ge*(R0/R)^(3*k)*(1-3*k*dR/c0) - 2*sigma/R - 4*mu_*dR/R - p0 - pA_ - Pv)/rho - 3/2*dR^2)/R;
+ddR = (1./R).*( ...
+       (1./rho).*( ...
+          P_Ge*(R/R0).^(-3*k).*(1 - 3*k*dR./c0) ...
+          - p0 - 2*sigma./R - 4*mu.*dR./R - pA - Pv ...
+       ) ...
+       - 3/2*dR^2 ...
+    );
 
 dy = [dR; ddR];
+
+end

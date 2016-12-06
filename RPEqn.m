@@ -37,6 +37,8 @@
 %     dy(1) = Rdot
 %     dy(2) = Rddot
 %
+%                Copyright 2016
+%
 %**************************************************************************
 
 function dy = RPEqn(t, y, medium, bubble, excitation)

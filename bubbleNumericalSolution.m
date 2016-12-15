@@ -6,14 +6,14 @@ clc
 bubble.R0 = 1.0E-6;   % Equilibrium radius [m]
 bubble.dR0 = 0;       % Initial wall velocity [m/s]
 bubble.Pvap = 2.33E3; % Vaporization Pressure
-bubble.hasShell = 1;
+bubble.hasShell = 0;
 bubble.shell.thickness = 15E-9; % [m] Estimation!!!
 bubble.shell.bulkViscosity = 1; % Bulk viscosity of shell [Pa]
 bubble.Rbuckle = 0.975.*bubble.R0; % Radius at which shell buckles [m]
 bubble.Rbreak = 1.2*bubble.R0; % Radius at which shell separates [m]
 
 % Set medium properties (from Tu et. al.)
-medium.p0 = 1.013e5;
+medium.p0 = 1.013E5;
 medium.c0 = 1500;
 medium.rho = 100;
 medium.k = 1.07;
@@ -42,14 +42,15 @@ sim.f0_m = 1/(2.*pi)*sqrt( ...
     );
 
 %% Excitation function properties
-pAmp = 95E3; % [Pa]
-f0 = sim.f0_m; % [Hz]
+pAmp = 6E5; % [Pa]
+f0 = 1.5.*sim.f0_m; % [Hz]
 omega0 = 2.*pi.*f0;
 tSim = linspace( sim.tMin, sim.tMax, 5E4);
 t0 = 1E-5; % Make sure not too large that ODE solver misses excitation
 t1 = t0 + 6./f0;
+BW = 0.1
 
-excitation.signal = pAmp.*excitationPulse( tSim, f0, 0.2, t0, 0 );
+excitation.signal = pAmp.*excitationPulse( tSim, f0, 0.1, t0, 0 );
 excitation.tVector = tSim;
 
 %% Main computation block

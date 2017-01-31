@@ -43,14 +43,14 @@ sim.f0_m = 1/(2.*pi)*sqrt( ...
 
 %% Excitation function properties
 pAmp = 6E5; % [Pa]
-f0 = 1.5.*sim.f0_m; % [Hz]
+f0 = 0.5.*sim.f0_m; % [Hz]
 omega0 = 2.*pi.*f0;
 tSim = linspace( sim.tMin, sim.tMax, 5E4);
 t0 = 1E-5; % Make sure not too large that ODE solver misses excitation
 t1 = t0 + 6./f0;
-BW = 0.1
+BW = 1;
 
-excitation.signal = pAmp.*excitationPulse( tSim, f0, 0.1, t0, 0 );
+excitation.signal = pAmp.*excitationPulse( tSim, f0, BW, t0, 0 );
 excitation.tVector = tSim;
 
 %% Main computation block

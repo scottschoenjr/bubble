@@ -3,14 +3,14 @@ close all
 clc
 
 % Set bubble properties
-bubble.R0 = 1.0E-6;   % Equilibrium radius [m]
+bubble.R0 = 2.8E-6;   % Equilibrium radius [m]
 bubble.dR0 = 0;       % Initial wall velocity [m/s]
-bubble.Pvap = 2.33E3; % Vaporization Pressure
+bubble.Pvap = 2.33E3; % Vapor Pressure
 bubble.hasShell = 0;
-bubble.shell.thickness = 15E-9; % [m] Estimation!!!
+bubble.shell.thickness = 10E-9; % [m] Estimation!!!
 bubble.shell.bulkViscosity = 1; % Bulk viscosity of shell [Pa]
-bubble.Rbuckle = 0.975.*bubble.R0; % Radius at which shell buckles [m]
-bubble.Rbreak = 1.2*bubble.R0; % Radius at which shell separates [m]
+bubble.Rbuckle = 0.99.*bubble.R0; % Radius at which shell buckles [m]
+bubble.Rbreak = 1.01*bubble.R0; % Radius at which shell separates [m]
 
 % Set medium properties (from Tu et. al.)
 medium.p0 = 1.013E5;
@@ -46,16 +46,25 @@ sim.f0_m = 1/(2.*pi)*sqrt( ...
     );
 
 %% Excitation function properties
-pAmp = 300E3; % [Pa]
-f0 = 1.*sim.f0_m; % [Hz]
+pAmp = 1E5; % [Pa]
+f0 = 0.9.*sim.f0_m; % [Hz]
 omega0 = 2.*pi.*f0;
 tSim = linspace( sim.tMin, sim.tMax, 5E4);
-t0 = 1E-6; % Make sure not too large that ODE solver misses excitation
+t0 = 2E-6; % Make sure not too large that ODE solver misses excitation
 t1 = t0 + 6./f0;
 BW = 0.2;
 
-excitation.signal = pAmp.*excitationPulse( tSim, f0, BW, t0, 0 );
 excitation.tVector = tSim;
+excitation.signal = pAmp.*excitationPulse( tSim, f0, BW, t0, 0 );
+
+useImpulse = 1;
+if useImpulse
+    s = 0.*tSim;
+    startIndex = find( tSim > t0, 1 );
+    endIndex = startIndex + 4;
+    s( startIndex : endIndex ) = pAmp;
+    excitation.signal = s;
+end
 
 %% Main computation block
 
@@ -96,46 +105,37 @@ figure()
 set( gcf, 'Position', [50, 50, 1000, 800] );
 
 % Excitation
-signalPlot = subplot( 3, 1, 1);
+signalPlot = subplot( 2, 1, 1);
 s = excitation.signal;
-plot( t_us, s./max(abs(s)), 'k' );
+plot( t_us, s./max(abs(s)), 'b' );
 
-title( sprintf( '$p_{0}$ = %3.1f kPa', pAmp./1E3 ) );
+title( sprintf( '($p_{0}$ = %3.1f kPa)', pAmp./1E3 ), 'Interpreter', 'latex'  );
 xlim(1E6.*[sim.tMin, sim.tMax]);
 
-ylabel( '$s(t)$', 'FontSize', 22, 'Interpreter', 'latex' );
+ylabel( '$P_{\rm ac}(t)$', 'FontSize', 22, 'Interpreter', 'latex' );
 set( gca, 'XTickLabel', '' );
 
+ylim([-1.05, 1.05]);
+
 % Radius
-radiusPlot = subplot( 3, 1, 2);
+radiusPlot = subplot( 2, 1, 2);
 plot(t_us, RNorm, 'k');
 
 xlim(1E6.*[sim.tMin, sim.tMax]);
 % ylim([0, 2]);
 
-ylabel('$R/R_{0}$', 'FontSize', 22, 'Interpreter', 'latex');
-xlabel('Time [$\mu$s]', 'FontSize', 18);
+ylabel('$R/R_{0}$', 'FontSize', 28, 'Interpreter', 'latex');
+xlabel('Time [$\mu$s]', 'FontSize', 24);
 
 % Link axes
 linkaxes( [signalPlot, radiusPlot], 'x' );
 zoom xon;
 
+% xlim([0.0, 8])
+
 % ----- Axes Limits
 % set( signalPlot, 'xlim', [8, 14] );
 % set( radiusPlot, 'xlim', [8, 14], 'ylim', [0, 3.5] );
-
-% Spectrum
-spectrumPlot = subplot(3, 1, 3);
-
-fNorm = fVector(2:end)./sim.f0_m;
-RtildeNorm = abs(Rtilde(2:end))./max(abs(Rtilde(2:end)));
-
-plot( fNorm, RtildeNorm, 'k' );
-
-xlabel( '$f/f_{0}$', 'FontSize', 22, 'Interpreter', 'latex' );
-ylabel( '$\mathcal{F}[\dot{R}]$', 'FontSize', 22, 'Interpreter', 'latex' );
-
-xlim( [0, 10] );
 
 % Citations
 % 1. Juan Tu et. al., "Microbubble Sizing and Shell Characterization Using
